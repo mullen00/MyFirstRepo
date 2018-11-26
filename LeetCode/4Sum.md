@@ -48,13 +48,3 @@
 	                            res[tuple(tmp4)]=1
 	        return list(res.keys())              
 ```
------------
-```flow
-st=>start: 第一次使用Markdown
-op=>operation: Markdown 真好用
-cond=>condition: 真的吗？
-e=>end:没错
-st->op->cond
-cond(yes)->e
-cond(no)->op
-```
