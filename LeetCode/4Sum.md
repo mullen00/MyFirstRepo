@@ -12,7 +12,7 @@
    +启发：可一次存储任意两个数的和作为字典的key，两个数的index作为value
    +为便于后面去重，可将两个数的index保存在一个集合中
 + 开始撸代码
-(```)
+```
 	class Solution:
 	    def fourSum(self, nums, target):
 	        """
@@ -47,7 +47,7 @@
 	                            tmp4 = sorted(tmp4)
 	                            res[tuple(tmp4)]=1
 	        return list(res.keys())              
-(```)
+```
 -----------
 ```flow
 st=>start: 第一次使用Markdown
