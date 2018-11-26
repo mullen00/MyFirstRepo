@@ -1,4 +1,4 @@
 # About the project
 
-## **an animation of linear convlutoin**
+## **an animation of linear convlutoin with a simple GUI using tkinter**
 
