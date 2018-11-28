@@ -3,15 +3,18 @@
 import random
 import time,threading
 
+lock = threading.Lock()
+
 
 class pcb(object):
-	def __init__(self,pid,id,priority=1000,time=0,status='ready',ppid=0,next=None):
+	def __init__(self, pid, id, priority=1000, need_time=0,used_time=0, status='ready', ppid=0, next=None):
 		self.pid = pid
 		self.id = id
 		self.priority = priority
 		self.status = status
 		self.ppid = ppid
-		self.time = time
+		self.need_time = need_time
+		self.used_time = used_time
 		self.next = next
 	def __str__(self):
 		return 'pid:{},status:{},priority:{}'.format(self.pid,self.status,self.priority)
@@ -113,7 +116,6 @@ class Running_Table(table):
 	def __init__(self,Max_size=1):
 		super().__init__(Max_size)
 		self.cur_p = self.root.next
-		self.used_time = 0
 
 	def clear(self):
 		node = self.root.next
@@ -128,39 +130,57 @@ class Running_Table(table):
 		self.root.next = node
 
 	def display(self):
-		while self.cur_p:
-			time.sleep(1)
-			print('-------------------------')
-			print(self.cur_p)
-			print('has been running for '+ str(self.used_time)+' seconds')
+			with lock:
+				if self.cur_p:
+					if self.cur_p.used_time<1:
+						print('-------------------------')
+						print(self.cur_p)
+						print('is inserted into running table by force ')
+					else:
+						print('-------------------------')
+						print(self.cur_p)
+						print('has been running for ' + str(self.cur_p.used_time) + ' seconds')
 
+	def running(self,ready_t,pause_t):
+		while True and (len(ready_t)>0 or len(pause_t)>0):
+			while len(pause_t)>0 and self.cur_p is None:
+				node = pause_t.get_first()
+				if node :
+					self.add_pcb(node)
+					start = time.time()
+					self.cur_p.used_time = int(time.time()-start)
+					while self.cur_p.used_time<node.need_time:
+						time.sleep(1)
+						if self.cur_p is not node:
+							node = self.cur_p
+							start = time.time()
+						self.cur_p.used_time = int(time.time()-start)
+						self.display()
+					print(self.cur_p,end='---is over\n')
+					self.clear()
 
-	def running(self,ready_t,pause_t=None):
-		while pause_t and len(pause_t)>0 and self.cur_p is None:
-			node = pause_t.get_first()
-			if node :
-				self.add_pcb(node)
-				start = time.time()
-				self.used_time = int(time.time()-start)
-				while self.used_time<node.time:
-					time.sleep(1)
-					self.used_time = int(time.time()-start)
-				self.clear()
-
-		while len(ready_t)>0 and self.cur_p is None:
-			node = ready_t.get_first()
-			if node :
-				self.add_pcb(node)
-				start = time.time()
-				self.used_time = int(time.time()-start)
-				while self.used_time <self.cur_p.time:
-					time.sleep(1)
-					self.used_time = int(time.time() - start)
-				self.clear()
+			while len(ready_t)>0 and self.cur_p is None:
+				if len(pause_t)>0:
+					break
+				node = ready_t.get_first()
+				if node :
+					self.add_pcb(node)
+					start = time.time()
+					self.cur_p.used_time = int(time.time()-start)
+					while self.cur_p.used_time <self.cur_p.need_time:
+						time.sleep(1)
+						if self.cur_p is not node:
+							node =  self.cur_p
+							start = time.time()
+						self.cur_p.used_time = int(time.time() - start)
+						self.display()
+					print(self.cur_p,end='---is over\n')
+					self.clear()
 
 	def new_p_by_PSA(self,ready_t, pause_t, new_p):
 		if self.cur_p:
 			if new_p.priority<self.cur_p.priority:
+				self.cur_p.need_time -= self.cur_p.used_time
 				pause_t.add_pcb(self.cur_p)
 				self.clear()
 				self.add_pcb(new_p)
@@ -178,49 +198,26 @@ class Pause_Table(table):
 	pass
 
 def test():
-	l = list(range(10))
-	k = list(range(10))
+	l = list(range(3,5))
+	k = list(range(3,5))
 
 	random.shuffle(l)
 	ready_t = Ready_Table()
 	pause_t = Pause_Table()
 	for i,j in zip(k,l):
-		tmp = pcb(i,i,priority=j,time=3)
+		tmp = pcb(i, i, priority=j, need_time=4)
 		ready_t.add_pcb(tmp)
 	ready_t.display()
 	running_t = Running_Table()
-	new_p = pcb(12,12,1,3)
-	t1 = threading.Thread(target=running_t.display,name='display')
-	t2 = threading.Thread(target=running_t.running,args=(ready_t,),name='running')
-	t3 = threading.Thread(target=running_t.new_p_by_PSA,name='PSA',args=(ready_t,pause_t,new_p))
-	t2.start()
+	new_p = pcb(2,2,1,3)
+	t1 = threading.Thread(target=running_t.running,args=(ready_t,pause_t),name='running')
+	t2 = threading.Thread(target=running_t.new_p_by_PSA,name='PSA',args=(ready_t,pause_t,new_p))
 	t1.start()
-	t3.start()
+	time.sleep(1)
+	t2.start()
 	t1.join()
 	t2.join()
-	t3.join()
 
-
-	# running_t.display()
 
 if __name__ == '__main__':
 	test()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
