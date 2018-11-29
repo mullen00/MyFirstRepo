@@ -1,10 +1,9 @@
 #author: Pan
-
+# the first version
 import random
 import time,threading
 
 lock = threading.Lock()
-
 
 class pcb(object):
 	def __init__(self, pid, id, priority=1000, need_time=0,used_time=0, status='ready', ppid=0, next=None):
