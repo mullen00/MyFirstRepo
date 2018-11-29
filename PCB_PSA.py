@@ -5,7 +5,6 @@ import time,threading
 
 lock = threading.Lock()
 
-
 class pcb(object):
 	def __init__(self, pid, id, priority=1000, need_time=0,used_time=0, status='ready', ppid=0, next=None):
 		self.pid = pid
@@ -17,7 +16,7 @@ class pcb(object):
 		self.used_time = used_time
 		self.next = next
 	def __str__(self):
-		return 'pid:{},status:{},priority:{}'.format(self.pid,self.status,self.priority)
+		return 'pid:{},  status:{},  priority:{},  need_time:{}'.format(self.pid,self.status,self.priority,self.need_time)
 
 class table(object):
 	def __init__(self,Max_size=None):
@@ -116,6 +115,8 @@ class Running_Table(table):
 	def __init__(self,Max_size=1):
 		super().__init__(Max_size)
 		self.cur_p = self.root.next
+		self.log = 'logging\n'
+
 
 	def clear(self):
 		node = self.root.next
@@ -133,15 +134,16 @@ class Running_Table(table):
 			with lock:
 				if self.cur_p:
 					if self.cur_p.used_time<1:
-						print('-------------------------')
-						print(self.cur_p)
-						print('is inserted into running table by force ')
+						res = '-------------------------\n'\
+						      +str(self.cur_p)+'\n'\
+							  +'is inserted into running table by force \n'
 					else:
-						print('-------------------------')
-						print(self.cur_p)
-						print('has been running for ' + str(self.cur_p.used_time) + ' seconds')
+						res = '-------------------------\n' \
+							  + str(self.cur_p)+'\n' \
+							  +'has been running for ' + str(self.cur_p.used_time) + ' seconds\n'
+					return res
 
-	def running(self,ready_t,pause_t):
+	def running(self,ready_t,pause_t,tx=None):
 		while True and (len(ready_t)>0 or len(pause_t)>0):
 			while len(pause_t)>0 and self.cur_p is None:
 				node = pause_t.get_first()
@@ -155,8 +157,12 @@ class Running_Table(table):
 							node = self.cur_p
 							start = time.time()
 						self.cur_p.used_time = int(time.time()-start)
-						self.display()
-					print(self.cur_p,end='---is over\n')
+						log = self.display()
+						self.log += log
+						print(log)
+					log = str(self.cur_p)+'---- over\n'
+					print(log)
+					self.log += log
 					self.clear()
 
 			while len(ready_t)>0 and self.cur_p is None:
@@ -173,10 +179,14 @@ class Running_Table(table):
 							node =  self.cur_p
 							start = time.time()
 						self.cur_p.used_time = int(time.time() - start)
-						self.display()
-					print(self.cur_p,end='---is over\n')
-					self.clear()
+						log = self.display()
+						print(self.log)
+						self.log += log
 
+					log = 'process with pid='+str(self.cur_p.pid)+'-'*15+ 'over\n'
+					print(log)
+					self.log += log
+					self.clear()
 	def new_p_by_PSA(self,ready_t, pause_t, new_p):
 		if self.cur_p:
 			if new_p.priority<self.cur_p.priority:
@@ -205,7 +215,7 @@ def test():
 	ready_t = Ready_Table()
 	pause_t = Pause_Table()
 	for i,j in zip(k,l):
-		tmp = pcb(i, i, priority=j, need_time=4)
+		tmp = pcb(i, i, priority=j, need_time=2)
 		ready_t.add_pcb(tmp)
 	ready_t.display()
 	running_t = Running_Table()
