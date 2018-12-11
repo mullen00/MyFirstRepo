@@ -71,8 +71,8 @@ class GUI_Freqz(tk.Tk):
 	def draw(self):
 		s1 = self.tx1.get(1.0, tk.END)
 		s2 = self.tx2.get(1.0, tk.END)
-		self.zeros = np.array([int(i) for i in re.findall('\d+', s1)])
-		self.polars = np.array([int(i) for i in re.findall('\d+', s2)])
+		self.zeros = np.array([float(i[0]) for i in re.findall("([-]?(\d+){1}(\.\d+)?)", s1)])
+		self.polars = np.array([float(i[0]) for i in re.findall("([-]?(\d+){1}(\.\d+)?)", s2)])
 		print(self.zeros)
 		self.set_file_name()
 		# try:
@@ -167,25 +167,33 @@ def response_draw(zeros_x,zeros_y,frame_num,file_name):
 		ax1.set_autoscaley_on(True)
 
 	ax2 = plt.subplot2grid((23,10),(14,1),rowspan=9,colspan=9)
-	angle = np.unwrap(np.angle(h,deg=True))
-	# angle = np.angle(h, deg=True)
+	ax2.set_xlim(0, 2 * np.pi)
+
 	try:
-		ax2.set_xlim(0,2*np.pi)
+		angle = np.unwrap(np.angle(h))
 	except:
+		ang
+
+	try:
 		ax2.set_ylim(angle.min(),angle.max())
-	# ax2.set_autoscaley_on(True)
-	ax2.set_ylabel('Angle (Degree)')
+
+	except:
+		ax1.set_autoscaley_on(True)
+
+
+	ax2.set_ylabel('Angle (Radians)')
 	def draw_frame(i):
 		ax2.plot(w[:i], angle[:i],'r-')
 		ax1.plot(w[:i], mag[:i],'k-')
-		ax1.set_xlabel('Frequency = %f'%w[i])
+		ax1.set_xlabel('Frequency = %f * Pi'%(w[i]/np.pi))
 		ax1.set_title('Response Magnitude = %f dB'%mag[i])
-		ax2.set_title('Response Angle = %f '%angle[i])
+		ax2.set_title('Response Angle = %f * Pi'%(angle[i]/np.pi))
 	def update(i):
 		draw_frame(10*i)
 
 	ani = matplotlib.animation.FuncAnimation(fig, update, frames=frame_num, interval=800)
 	ani.save(file_name, writer='imagemagick')
+	# ani.save('pre.mp4')
 	plt.show()
 
 if __name__ == '__main__':
